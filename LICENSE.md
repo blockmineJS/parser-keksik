@@ -8,6 +8,5 @@ Permission is hereby granted to any individual or organization to use, study, an
 4. Use of this software in services or products made available to third parties (including Software-as-a-Service) is prohibited.
 5. You may not remove or alter this license text or copyright notice.
 
-This license grants no rights other than those expressly stated above. For any use not covered by this license, please contact the copyright holder at [contact email or website].
 
 THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.

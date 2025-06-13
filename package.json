@@ -1,6 +1,6 @@
 {
     "name": "parser-keksik",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Парсит сообщения чата для mineblaze, dexland, masedworld, cheatmine и генерирует события для команд под их сервера.",
     "main": "index.js",
     "botpanel": {

@@ -22,31 +22,45 @@ function extractClickEvent(chatMessage) {
 }
 
 const serverConfigs = {
-    'mc.mineblaze.net': { },
-    'mc.masedworld.net': { },
-    'mc.cheatmine.net': { },
-    'mc.dexland.org': { },
+    'mc.mineblaze.net': {
+        arrowChar: '→',
+        privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/,
+    },
+    'mc.masedworld.net': {
+        arrowChar: '⇨',
+        privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/,
+    },
+    'mc.cheatmine.net': {
+        arrowChar: '⇨',
+        privatePattern: /\[\*\] \[(.*?)\s+([^\[\]\s]+) -> я\] (.+)/,
+        specialPrivateCheck: true,
+    },
+    'mc.dexland.org': {
+        arrowChar: '→',
+        privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/,
+    },
 };
 
 module.exports = (bot, options) => {
     const log = bot.sendLog;
     const serverConfig = serverConfigs[bot.config.server.host];
-    const settings = options.settings;
+    const settings = options.settings || {};
 
     if (!serverConfig) {
-        log(`[ChatParser] Конфигурация для сервера ${bot.config.server.host} не найдена.`);
+        log(`[ChatParser] Конфигурация для сервера ${bot.config.server.host} не найдена. Плагин не будет загружен.`);
         return;
     }
 
-    const chatTypesConfig = {
-        local: { delay: settings.localDelay || 500 },
-        global: { prefix: '!', delay: settings.globalDelay || 1000 },
-        clan: { prefix: '/cc ', delay: settings.clanDelay || 500 },
-        private: { prefix: '/msg ', delay: settings.privateDelay || 1000 }
-    };
-    
-    bot.messageQueue.applyCustomConfig(chatTypesConfig);
-    log(`[ChatParser] Настройки задержек чата применены.`);
+    bot.messageQueue.registerChatType('global', { 
+        prefix: '!', 
+        delay: settings.globalDelay || 3000
+    });
+    bot.messageQueue.registerChatType('clan', { 
+        prefix: '/cc ', 
+        delay: settings.clanDelay || 500 
+    });
+
+    log(`[ChatParser] Типы чатов 'global' и 'clan' зарегистрированы.`);
     
     const messageHandler = (rawMessageText, jsonMsg) => {
         try {
@@ -65,8 +79,8 @@ module.exports = (bot, options) => {
                 if (match) result = { type: 'private', username: extractClickEvent(jsonMsg), message: match[2] };
             }
             
-            if (result) {
-                if (result.username) bot.events.emit('chat:message', result);
+            if (result && result.username) {
+                bot.events.emit('chat:message', result);
                 return;
             }
 
@@ -94,7 +108,6 @@ module.exports = (bot, options) => {
                     return;
                 }
             }
-            
         } catch (error) {
             log(`[ChatParser] Ошибка при парсинге сообщения: ${error.message}`);
         }

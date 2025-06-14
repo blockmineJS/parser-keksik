@@ -51,6 +51,11 @@ module.exports = (bot, options) => {
         return;
     }
 
+    bot.messageQueue.registerChatType('chat', { 
+        prefix: '', 
+        delay: settings.localDelay || 3000
+    });
+
     bot.messageQueue.registerChatType('global', { 
         prefix: '!', 
         delay: settings.globalDelay || 3000
@@ -58,6 +63,11 @@ module.exports = (bot, options) => {
     bot.messageQueue.registerChatType('clan', { 
         prefix: '/cc ', 
         delay: settings.clanDelay || 500 
+    });
+
+    bot.messageQueue.registerChatType('private', { 
+        prefix: '', 
+        delay: settings.privateDelay || 3000
     });
 
     log(`[ChatParser] Типы чатов 'global' и 'clan' зарегистрированы.`);

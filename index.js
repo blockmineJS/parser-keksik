@@ -68,6 +68,8 @@ module.exports = (bot, options) => {
             const clanPattern = /КЛАН:\s*(.+?):\s*(.*)/i;
             const cleanedMessageText = rawMessageText.replace(/❤\s?/u, '').trim();
 
+            log(jsonMsg.toAnsi())
+
             let match;
             let result = null;
 

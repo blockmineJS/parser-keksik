@@ -1,44 +1,51 @@
+
 function extractUsernameFromClickEvent(clickEvent) {
     if (clickEvent?.action === 'suggest_command') {
-        const parts = clickEvent.value.trim().split(/\s+/);
-        if (parts.length > 1) return parts[1];
-    }
-    return null;
-}
-
-function extractClickEvent(chatMessage) {
-    if (chatMessage.clickEvent) {
-        const username = extractUsernameFromClickEvent(chatMessage.clickEvent);
-        if (username) return username;
-    }
-    if (chatMessage.extra) {
-        for (const part of chatMessage.extra) {
-            const username = extractClickEvent(part);
-            if (username) return username;
+        const commandValue = clickEvent.value;
+        const parts = commandValue.trim().split(/\s+/);
+        if (parts.length > 1) {
+            return parts[1];
         }
     }
     return null;
 }
 
+const MAX_CLICK_EVENT_DEPTH = 10;
+
+function extractClickEventRecursive(chatMessage, depth) {
+    if (depth > MAX_CLICK_EVENT_DEPTH) {
+        return null;
+    }
+    if (chatMessage.clickEvent) {
+        const username = extractUsernameFromClickEvent(chatMessage.clickEvent);
+        if (username) {
+            return username;
+        }
+    }
+    if (chatMessage.extra && Array.isArray(chatMessage.extra)) {
+        for (const part of chatMessage.extra) {
+            if (typeof part === 'object' && part !== null) {
+                 const username = extractClickEventRecursive(part, depth + 1);
+                 if (username) {
+                     return username;
+                 }
+            }
+        }
+    }
+    return null;
+}
+
+function extractClickEvent(chatMessage) {
+    return extractClickEventRecursive(chatMessage, 0);
+}
+
 const serverConfigs = {
-    'mc.mineblaze.net': {
-        arrowChar: '→',
-        privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/,
-    },
-    'mc.masedworld.net': {
-        arrowChar: '⇨',
-        privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/,
-    },
-    'mc.cheatmine.net': {
-        arrowChar: '⇨',
-        privatePattern: /\[\*\] \[(.*?)\s+([^\[\]\s]+) -> я\] (.+)/,
-        specialPrivateCheck: true,
-    },
-    'mc.dexland.org': {
-        arrowChar: '→',
-        privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/,
-    },
+    'mc.mineblaze.net': { arrowChar: '→', privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/ },
+    'mc.masedworld.net': { arrowChar: '⇨', privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/ },
+    'mc.cheatmine.net': { arrowChar: '⇨', privatePattern: /\[\*\] \[(.*?)\s+([^\[\]\s]+) -> я\] (.+)/, specialPrivateCheck: true },
+    'mc.dexland.org': { arrowChar: '→', privatePattern: /\[(.*?)\s+->\s+я\]\s+(.+)/ },
 };
+
 
 module.exports = (bot, options) => {
     const log = bot.sendLog;
@@ -50,12 +57,11 @@ module.exports = (bot, options) => {
         return;
     }
 
-    bot.messageQueue.registerChatType('chat', { prefix: '', delay: settings.localDelay || 3000 });
-    bot.messageQueue.registerChatType('global', { prefix: '!', delay: settings.globalDelay || 3000 });
+    bot.messageQueue.registerChatType('chat', { prefix: '', delay: settings.localDelay || 1000 });
+    bot.messageQueue.registerChatType('global', { prefix: '!', delay: settings.globalDelay || 1000 });
     bot.messageQueue.registerChatType('clan', { prefix: '/cc ', delay: settings.clanDelay || 500 });
-    bot.messageQueue.registerChatType('private', { prefix: '', delay: settings.privateDelay || 3000 });
-
-    log(`[ChatParser] Типы чатов 'global' и 'clan' зарегистрированы.`);
+    bot.messageQueue.registerChatType('private', { prefix: '/msg ', delay: settings.privateDelay || 1000 });
+    log(`[ChatParser] Типы чатов зарегистрированы.`);
     
     const messageHandler = (rawMessageText, jsonMsg) => {
         try {
@@ -63,13 +69,13 @@ module.exports = (bot, options) => {
 
             const { arrowChar, privatePattern, specialPrivateCheck } = serverConfig;
             const clanPattern = /КЛАН:\s*(.+?):\s*(.*)/i;
-            const cleanedMessageText = rawMessageText.replace(/❤\s?/u, '').trim();
+            const cleanedMessageText = rawMessageText.replace(/[\u2764\uFE0F\s]+/gu, ' ').trim();
 
             let match;
             let result = null;
 
-            if (specialPrivateCheck && /я\]/.test(rawMessageText)) {
-                match = rawMessageText.match(privatePattern);
+            if (specialPrivateCheck && /я\]/.test(cleanedMessageText)) {
+                match = cleanedMessageText.match(privatePattern);
                 if (match) result = { type: 'private', username: extractClickEvent(jsonMsg), message: match[3] };
             } else {
                 match = cleanedMessageText.match(privatePattern);
@@ -82,7 +88,7 @@ module.exports = (bot, options) => {
                     const messageContent = cleanedMessageText.substring(arrowIndex + arrowChar.length).trim();
                     const username = extractClickEvent(jsonMsg);
                     if (username) {
-                        const type = /\[ʟ\]/i.test(cleanedMessageText) ? 'local' : 'global';
+                        const type = /\[ʟ\]/i.test(cleanedMessageText) ? 'chat' : 'global';
                         result = { type, username, message: messageContent };
                     }
                 }
@@ -99,7 +105,6 @@ module.exports = (bot, options) => {
 
             if (result && result.username) {
                 bot.events.emit('chat:message', result);
-                return;
             }
 
         } catch (error) {

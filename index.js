@@ -1,4 +1,3 @@
-
 function extractUsernameFromClickEvent(clickEvent) {
     if (clickEvent?.action === 'suggest_command') {
         const parts = clickEvent.value.trim().split(/\s+/);
@@ -99,7 +98,7 @@ module.exports = (bot, options) => {
             }
 
             if (result && result.username) {
-                bot.emit('chat', result.username, result.message);
+                bot.events.emit('chat:message', result);
                 return;
             }
 

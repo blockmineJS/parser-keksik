@@ -51,34 +51,20 @@ module.exports = (bot, options) => {
         return;
     }
 
-    bot.messageQueue.registerChatType('chat', { 
-        prefix: '', 
-        delay: settings.localDelay || 3000
-    });
-
-    bot.messageQueue.registerChatType('global', { 
-        prefix: '!', 
-        delay: settings.globalDelay || 3000
-    });
-    bot.messageQueue.registerChatType('clan', { 
-        prefix: '/cc ', 
-        delay: settings.clanDelay || 500 
-    });
-
-    bot.messageQueue.registerChatType('private', { 
-        prefix: '', 
-        delay: settings.privateDelay || 3000
-    });
+    bot.messageQueue.registerChatType('chat', { prefix: '', delay: settings.localDelay || 3000 });
+    bot.messageQueue.registerChatType('global', { prefix: '!', delay: settings.globalDelay || 3000 });
+    bot.messageQueue.registerChatType('clan', { prefix: '/cc ', delay: settings.clanDelay || 500 });
+    bot.messageQueue.registerChatType('private', { prefix: '', delay: settings.privateDelay || 3000 });
 
     log(`[ChatParser] Типы чатов 'global' и 'clan' зарегистрированы.`);
     
     const messageHandler = (rawMessageText, jsonMsg) => {
         try {
+            if (!rawMessageText.trim()) return;
+
             const { arrowChar, privatePattern, specialPrivateCheck } = serverConfig;
             const clanPattern = /КЛАН:\s*(.+?):\s*(.*)/i;
             const cleanedMessageText = rawMessageText.replace(/❤\s?/u, '').trim();
-
-            log(jsonMsg.toAnsi())
 
             let match;
             let result = null;
@@ -91,12 +77,7 @@ module.exports = (bot, options) => {
                 if (match) result = { type: 'private', username: extractClickEvent(jsonMsg), message: match[2] };
             }
             
-            if (result && result.username) {
-                bot.events.emit('chat:message', result);
-                return;
-            }
-
-            if (/\[[ʟɢ]\]/i.test(cleanedMessageText)) {
+            if (!result && /\[[ʟɢ]\]/i.test(cleanedMessageText)) {
                 const arrowIndex = cleanedMessageText.indexOf(arrowChar);
                 if (arrowIndex !== -1) {
                     const messageContent = cleanedMessageText.substring(arrowIndex + arrowChar.length).trim();
@@ -104,22 +85,24 @@ module.exports = (bot, options) => {
                     if (username) {
                         const type = /\[ʟ\]/i.test(cleanedMessageText) ? 'local' : 'global';
                         result = { type, username, message: messageContent };
-                        bot.events.emit('chat:message', result);
-                        return;
                     }
                 }
             }
             
-            if (cleanedMessageText.startsWith("КЛАН:")) {
+            if (!result && cleanedMessageText.startsWith("КЛАН:")) {
                 match = cleanedMessageText.match(clanPattern);
                 if (match) {
                     const words = match[1].trim().split(/\s+/);
                     const username = words.length > 1 ? words[words.length - 1] : words[0];
                     result = { type: 'clan', username, message: match[2] };
-                    bot.events.emit('chat:message', result);
-                    return;
                 }
             }
+
+            if (result && result.username) {
+                bot.emit('chat', result.username, result.message);
+                return;
+            }
+
         } catch (error) {
             log(`[ChatParser] Ошибка при парсинге сообщения: ${error.message}`);
         }

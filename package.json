@@ -1,15 +1,15 @@
 {
-    "name": "parser-keksik",
-    "version": "1.1.0",
-    "description": "Парсит сообщения чата, генерируя стандартизированные события. Обязателен для многих плагинов для MineBlaze, MasedWorld, DexLand, CheatMine. Добавляет новые типы чата - global, clan",
-    "main": "index.js",
-    "botpanel": {
-      "supportedHosts": [
-        "mc.mineblaze.net",
-        "mc.masedworld.net",
-        "mc.cheatmine.net",
-        "mc.dexland.org"
-      ],
+  "name": "parser-keksik",
+  "version": "1.1.1",
+  "description": "Парсит сообщения чата для mineblaze, dexland, masedworld, cheatmine и генерирует события для команд под их сервера.",
+  "main": "index.js",
+  "botpanel": {
+    "supportedHosts": [
+      "mc.mineblaze.net",
+      "mc.masedworld.net",
+      "mc.cheatmine.net",
+      "mc.dexland.org"
+    ],
     "settings": {
       "localDelay": {
         "type": "number",

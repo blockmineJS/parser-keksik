@@ -107,7 +107,8 @@ module.exports = (bot, options) => {
             }
 
             if (result && result.username) {
-                bot.events.emit('chat:message', result);
+                const eventData = { ...result, jsonMsg: jsonMsg };
+                bot.events.emit('chat:message', eventData);
             }
 
         } catch (error) {
